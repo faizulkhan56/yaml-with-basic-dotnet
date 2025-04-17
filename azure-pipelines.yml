@@ -1,4 +1,4 @@
-itrigger:
+trigger:
   branches: [ main ]
 
 pool:
