@@ -37,10 +37,7 @@ stages:
         displayName: 'Run Unit Tests'
 
       # 5) Publish your web‑app project to the staging folder
-      - script: |
-          dotnet publish devopswebapp/devopswebapp.csproj \
-            --configuration $(buildConfiguration) \
-            --output $(Build.ArtifactStagingDirectory)
+      - script: dotnet publish "devopswebapp/devopswebapp.csproj" --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)
         displayName: 'Publish WebApp → Staging'
 
       # 6) Push everything in the staging folder as a pipeline artifact
