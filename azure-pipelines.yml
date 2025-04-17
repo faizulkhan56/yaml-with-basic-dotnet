@@ -1,22 +1,43 @@
 trigger:
-- main
+  branches:
+    include:
+      - main
 
 pool:
   name: Default
 
 stages:
 - stage: Build
-  displayName: Build stage
+  displayName: 'Build → Publish Artifact'
   jobs:
   - job: Compile
+    displayName: 'Build & Stage'
     steps:
-    - checkout: self
-    - script: dotnet build -c Release
-      displayName: 'Build'
+      - checkout: self
 
-    - script: dotnet test -c Release --no-build --logger "trx;LogFileName=test_results.trx"
-      displayName: 'Test'
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetPath: '$(Build.SourcesDirectory)/bin/Release'
-        artifact: drop
+      # 1. Ensure .NET SDK is present
+      - task: UseDotNet@2
+        displayName: 'Install .NET SDK (7.x)'
+        inputs:
+          packageType: 'sdk'
+          version: '7.x'
+
+      # 2. Build your solution
+      - script: dotnet build 'MySolution.sln' -c Release
+        displayName: 'dotnet build'
+
+      # 3. Run tests
+      - script: dotnet test 'MySolution.Tests/MySolution.Tests.csproj' --configuration Release --no-build --logger "trx;LogFileName=test_results.trx"
+        displayName: 'dotnet test'
+
+      # 4. Publish (produce deployable output) into the staging dir
+      - script: dotnet publish 'MySolution.sln' -c Release -o $(Build.ArtifactStagingDirectory)
+        displayName: 'dotnet publish → staging'
+
+      # 5. Publish the staging folder as a single artifact
+      - task: PublishPipelineArtifact@1
+        displayName: 'Publish pipeline artifact'
+        inputs:
+          targetPath: '$(Build.ArtifactStagingDirectory)'
+          artifact: drop
+
