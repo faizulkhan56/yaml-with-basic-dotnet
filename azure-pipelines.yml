@@ -1,34 +1,22 @@
-trigger:
-- main  # or any branch you want to monitor
+itrigger:
+  branches: [ main ]
 
 pool:
-  name: Default  # your local Windows agent pool
+  name: Default
 
-variables:
-  imageName: 'dotnetapp'                         # your Docker image name
-  acrLoginServer: 'mycompanyacr212.azurecr.io'  # your ACR login server
-  tag: '$(Build.BuildId)'                       # auto-tag with build ID
+stages:
+- stage: Build
+  displayName: Build stage
+  jobs:
+  - job: Compile
+    steps:
+    - checkout: self
+    - script: dotnet build -c Release
+      displayName: 'Build'
 
-steps:
-# Optional: Checkout your repo
-- checkout: self
-
-# Build & Push Docker Image to ACR
-- task: Docker@2
-  displayName: Build and Push Image to ACR
-  inputs:
-    containerRegistry: 'acr-service-conn'     # must match service connection name
-    repository: '$(imageName)'
-    command: 'buildAndPush'
-    Dockerfile: '**/Dockerfile'
-    tags: |
-      $(tag)
-      latest
-
-# Publish a dummy artifact to trigger CD pipeline
-- task: PublishBuildArtifacts@1
-  displayName: Publish dummy artifact to trigger release
-  inputs:
-    PathtoPublish: 'README.md'     # or any small file
-    ArtifactName: 'drop'
-    publishLocation: 'Container'
+    - script: dotnet test -c Release --no-build --logger "trx;LogFileName=test_results.trx"
+      displayName: 'Test'
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.SourcesDirectory)/bin/Release'
+        artifact: drop
