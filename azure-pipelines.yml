@@ -6,38 +6,50 @@ trigger:
 pool:
   name: Default
 
+variables:
+  buildConfiguration: 'Release'
+
 stages:
-- stage: Build
-  displayName: 'Build → Publish Artifact'
+- stage: BuildAndPublish
+  displayName: '🔨 Build → Test → Publish'
   jobs:
-  - job: Compile
-    displayName: 'Build & Stage'
+  - job: BuildJob
+    displayName: 'Build & Test Job'
     steps:
+
+      # 1) Checkout your repo
       - checkout: self
 
-      # 1. Ensure .NET SDK is present
+      # 2) Make sure the .NET SDK is available
       - task: UseDotNet@2
         displayName: 'Install .NET SDK (7.x)'
         inputs:
           packageType: 'sdk'
-          version: '7.x'
+          version: '7.0.x'
 
-      # 2. Build your solution
-      - script: dotnet build 'MySolution.sln' -c Release
-        displayName: 'dotnet build'
+      # 3) Build your solution (at repo root)
+      - script: |
+          dotnet build devops-webapp-solution.sln --configuration $(buildConfiguration)
+        displayName: 'Build Solution'
 
-      # 3. Run tests
-      - script: dotnet test 'MySolution.Tests/MySolution.Tests.csproj' --configuration Release --no-build --logger "trx;LogFileName=test_results.trx"
-        displayName: 'dotnet test'
+      # 4) Run unit tests (point at your Test project folder)
+      - script: |
+          dotnet test devopswebapp.Tests/devopswebapp.Tests.csproj \
+            --configuration $(buildConfiguration) --no-build \
+            --logger "trx;LogFileName=test_results.trx"
+        displayName: 'Run Unit Tests'
 
-      # 4. Publish (produce deployable output) into the staging dir
-      - script: dotnet publish 'MySolution.sln' -c Release -o $(Build.ArtifactStagingDirectory)
-        displayName: 'dotnet publish → staging'
+      # 5) Publish your web‑app project to the staging folder
+      - script: |
+          dotnet publish devopswebapp/devopswebapp.csproj \
+            --configuration $(buildConfiguration) \
+            --output $(Build.ArtifactStagingDirectory)
+        displayName: 'Publish WebApp → Staging'
 
-      # 5. Publish the staging folder as a single artifact
+      # 6) Push everything in the staging folder as a pipeline artifact
       - task: PublishPipelineArtifact@1
-        displayName: 'Publish pipeline artifact'
+        displayName: 'Publish drop Artifact'
         inputs:
           targetPath: '$(Build.ArtifactStagingDirectory)'
-          artifact: drop
+          artifact: 'drop'
 
