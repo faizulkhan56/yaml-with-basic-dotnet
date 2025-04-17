@@ -33,10 +33,7 @@ stages:
         displayName: 'Build Solution'
 
       # 4) Run unit tests (point at your Test project folder)
-      - script: |
-          dotnet test devopswebapp.Tests/devopswebapp.Tests.csproj \
-            --configuration $(buildConfiguration) --no-build \
-            --logger "trx;LogFileName=test_results.trx"
+      - script: dotnet test "devopswebapp.Tests/devopswebapp.Tests.csproj" --configuration $(buildConfiguration) --no-build --logger "trx;LogFileName=test_results.trx"
         displayName: 'Run Unit Tests'
 
       # 5) Publish your web‑app project to the staging folder
