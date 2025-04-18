@@ -46,4 +46,12 @@ stages:
         inputs:
           targetPath: '$(Build.ArtifactStagingDirectory)'
           artifact: 'drop'
+      
+      - task: PublishTestResults@2
+        displayName: 'Publish Test Results'
+        inputs:
+          testResultsFormat: 'VSTest'
+          testResultsFiles: '**/test_results.trx'
+          mergeTestResults: true
+          failTaskOnFailedTests: true
 
